@@ -21,17 +21,9 @@ JavaScript – Client-side logic
 Backend (optional) – Can be extended using PHP, Node.js, or Python
 
 Git & GitHub – Version control
-md
+
 ## Project Structure
-booking-system/
 
-├── index.html        # Main booking page
-
-├── style.css         # Styling file
-
-├── script.js         # Booking logic
-
-├── README.md         # Project documentation
 
 
 
