@@ -1,175 +1,119 @@
-Swahili Port Hub Room Booking System
+# Swahili Port Hub Room Booking System
 
-Overview
-The Swahili Port Hub Room Booking System is a digital platform designed to simplify how rooms and spaces within Swahili Port Hub are reserved, managed, and tracked. The system allows users to book available rooms while enabling administrators to manage availability, approvals, and records efficiently.
+## Overview
+The Swahili Port Hub Room Booking System is a digital platform designed to simplify how rooms and spaces within Swahili Port Hub are reserved, managed, and tracked. The system allows users to book available rooms while enabling administrators to efficiently manage availability, approvals, and records.
 
 This solution is ideal for meetings, creative sessions, training, co-working, and events hosted at Swahili Port Hub.
 
+---
 
-Objectives
-Simplicity: Provide a simple and fast room booking process.
-Efficiency: Reduce booking conflicts and manual paperwork.
-Visibility: Improve visibility of room availability.
-Centralization: Centralize booking data and usage history.
+## Objectives
+- **Simplicity:** Provide a simple and fast room booking process  
+- **Efficiency:** Reduce booking conflicts and manual paperwork  
+- **Visibility:** Improve visibility of room availability  
+- **Centralization:** Centralize booking data and usage history  
 
+---
 
-Key Features
+## Key Features
 
-User Features
-View Availability: Browse available rooms looking for suitable slots.
-Easy Booking: Book rooms by selecting date and time.
-Notifications: Receive booking confirmations.
-Manage Bookings: Cancel or update bookings (within policy guidelines).
+### User Features
+- View room availability  
+- Easy room booking by date and time  
+- Receive booking confirmations  
+- Manage bookings (cancel or update within policy)
 
-Admin Features
-Room Management: Add, edit, or remove rooms.
-Configuration: Set room capacity and specific rules.
-Workflow Control: Approve or reject booking requests.
-Insights: View booking history and analytics.
+### Admin Features
+- Add, edit, or remove rooms  
+- Configure room capacity and rules  
+- Approve or reject booking requests  
+- View booking history and analytics  
 
+---
 
-Room Information
-Each room listing in the system includes:
-Room Name
-Capacity
-Available Facilities (e.g., Wi-Fi, Projector, AC)
-Booking Price (if applicable)
-Availability Schedule
+## Room Information
+Each room includes:
+- Room name  
+- Capacity  
+- Available facilities (Wi-Fi, Projector, AC, etc.)  
+- Booking price (if applicable)  
+- Availability schedule  
 
+---
 
-System Workflow
-1. Access: User logs in or accesses the platform.
-2. Selection: User selects a desired date, time, and room.
-3. Request: A booking request is submitted. If the room is already booked, the user can reserve it (waitlist).
-4. Approval: Admin reviews and approves the request (if required).
-5. Confirmation: A booking confirmation is sent to the user.
+## System Workflow
+1. User logs in or accesses the platform  
+2. User selects date, time, and room  
+3. Booking request is submitted  
+4. Admin approves or rejects the request (if required)  
+5. Confirmation is sent to the user  
 
+---
 
-Logic Flow
-
+## Logic Flow
 [Log In]
-   |
-   V
-[Dashboard] <-----------------------+
-   |                                |
-   V                                |
-[View Button]                       |
-   |                                |
-   V                                |
-[Booking Page]                      |
-   |                                |
-   V                                |
-[Available?]                        |
-   |                                |
-   +--- YES ---> [Booked]           |
-   |                                |
-   +--- NO ---> [Reserve]           |
-                |                   |
-                V                   |
-           [Book Another Room] -----+
+|
+[Dashboard]
+|
+[View Rooms]
+|
+[Booking Page]
+|
+[Available?]
+|---- YES ---> [Booked]
+|---- NO ---> [Reserve / Book Another Room]
 
+---
 
-Folder Structure
-BS1
-    backend
-        package.json
-        package-lock.json
-    frontend
-    index.js
-    package.json
-    README.md
+## Folder Structure
+BS1/
+├── backend/
+│ ├── package.json
+│ └── package-lock.json
+├── frontend/
+│ ├── index.js
+│ └── package.json
+└── README.md
 
+---
 
-Technology Stack
-Frontend: React, Vite
-Styling: Tailwind CSS
-Backend: Node.js, Express
-Database: MySQL
-Authentication: Email or phone-based login
+## Technology Stack
+- **Frontend:** React, Vite  
+- **Styling:** Tailwind CSS  
+- **Backend:** Node.js, Express  
+- **Database:** MySQL  
+- **Authentication:** Email or phone-based login  
 
+---
 
-Security & Access
-Role-Based Access Control (RBAC): Distinct permissions for Users and Admins.
-Secure Authentication: Robust login mechanisms.
-Data Safety: Data protection measures and regular backups.
+## Security & Access
+- Role-Based Access Control (RBAC)  
+- Secure authentication mechanisms  
+- Data protection and regular backups  
 
+---
 
-Future Enhancements
-Mobile App Integration
-Calendar Sync (e.g., Google Calendar)
-Automated Reminders & Notifications
-Multi-language Support (English)
+## Future Enhancements
+- Mobile app integration  
+- Calendar synchronization (Google Calendar)  
+- Automated reminders and notifications  
+- Multi-language support (English)  
 
+---
 
-Contributors
-Project Owner: Swahili Port Hub
-Developers & Designers: Anthony Muhati, NASSORO MOHAMMAD, Cynthia Wafula, Eben Leo Makhanu
+## Contributors
+- **Project Owner:** Swahili Port Hub  
+- **Developers & Designers:**  
+  - Anthony Muhati  
+  - Nassoro Mohammad  
+  - Cynthia Wafula  
+  - Eben Leo Makhanu  
 
+---
 
-Support
-For support or inquiries, contact: Swahili Port Hub Management
+## Support
+For support or inquiries, contact **Swahili Port Hub Management**.
 
+---
 
-Building smarter spaces for collaboration and innovation.
-
-## Getting Started (for Developers)
-
-To run this project locally, follow these steps:
-
-### Prerequisites
-- Node.js installed on your machine.
-
-### Installation
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-### Running the Application
-Start the development server:
-```bash
-npm run dev
-```
-The application will be available at `http://localhost:5173`.
-
-### Troubleshooting
-
-#### PowerShell "script cannot be loaded" Error
-If you encounter an error like `npm : File ... npm.ps1 cannot be loaded because running scripts is disabled`, it is due to PowerShell's execution policy.
-
-**Solution 1 (Recommended):**
-Run the command in **Command Prompt (cmd)** instead of PowerShell.
-
-**Solution 2 (PowerShell):**
-Temporarily bypass the execution policy for the current session:
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-```
-Then try running `npm run dev` again.
-
-**Solution 3 (Permanent):**
-Change the execution policy for your user (allows local scripts):
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-```
-
-#### Tailwind CSS v4 PostCSS Error
-If you see an error about `tailwindcss` moving to a separate package for PostCSS:
-1. Install the PostCSS plugin:
-   ```bash
-   npm install @tailwindcss/postcss
-   ```
-2. Update `postcss.config.js`:
-   ```js
-   export default {
-     plugins: {
-       '@tailwindcss/postcss': {},
-       autoprefixer: {},
-     },
-   }
-   ```
-3. Update `src/index.css` to use `@import "tailwindcss";`.
+*Building smarter spaces for collaboration and innovation.*
