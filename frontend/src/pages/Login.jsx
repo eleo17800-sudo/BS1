@@ -17,6 +17,18 @@ const Login = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         console.log('Login Data:', formData);
+
+        // Track user login
+        const activeSessions = JSON.parse(localStorage.getItem('activeSessions')) || [];
+        const newSession = {
+            id: Date.now(),
+            email: formData.email,
+            loginTime: new Date().toISOString(),
+            status: 'online'
+        };
+        activeSessions.push(newSession);
+        localStorage.setItem('activeSessions', JSON.stringify(activeSessions));
+
         // Mock login - navigate to dashboard
         navigate('/dashboard');
     };
@@ -84,12 +96,6 @@ const Login = () => {
                             Sign up
                         </Link>
                     </p>
-                    <div className="pt-4 border-t border-gray-100">
-                        <Link to="/admin/login" className="text-sm text-gray-500 hover:text-red-600 transition-colors flex items-center justify-center">
-                            <Building2 className="w-4 h-4 mr-2" />
-                            Admin Portal Access
-                        </Link>
-                    </div>
                 </div>
             </div>
         </div>
