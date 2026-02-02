@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import BookingModal from '../components/BookingModal';
+import Footer from '../components/Footer';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -178,6 +179,8 @@ const Dashboard = () => {
                     </div>
                 )}
             </main>
+
+            <Footer />
         </div>
     );
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Edit, LogOut, LayoutGrid, Building2, Users, Clock, Monitor, XCircle } from 'lucide-react';
 import AddRoomModal from '../components/AddRoomModal';
+import Footer from '../components/Footer';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -241,6 +242,8 @@ const AdminDashboard = () => {
                     </div>
                 )}
             </main>
+
+            <Footer />
         </div>
     );
 };
