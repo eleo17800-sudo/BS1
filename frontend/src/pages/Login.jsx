@@ -8,29 +8,61 @@ const Login = () => {
         email: '',
         password: '',
     });
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+        setError('');
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Login Data:', formData);
+        setLoading(true);
+        setError('');
 
-        // Track user login
-        const activeSessions = JSON.parse(localStorage.getItem('activeSessions')) || [];
-        const newSession = {
-            id: Date.now(),
-            email: formData.email,
-            loginTime: new Date().toISOString(),
-            status: 'online'
-        };
-        activeSessions.push(newSession);
-        localStorage.setItem('activeSessions', JSON.stringify(activeSessions));
+        try {
+            const response = await fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
 
-        // Mock login - navigate to dashboard
-        navigate('/dashboard');
+            const data = await response.json();
+
+            if (response.ok) {
+                // Store user data in localStorage
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                // Track user login (optional/legacy)
+                const activeSessions = JSON.parse(localStorage.getItem('activeSessions')) || [];
+                const newSession = {
+                    id: Date.now(),
+                    email: data.user.email,
+                    loginTime: new Date().toISOString(),
+                    status: 'online'
+                };
+                activeSessions.push(newSession);
+                localStorage.setItem('activeSessions', JSON.stringify(activeSessions));
+
+                // Redirect based on role
+                if (data.user.role === 'admin') {
+                    navigate('/admin-dashboard');
+                } else {
+                    navigate('/dashboard');
+                }
+            } else {
+                setError(data.error || 'Invalid email or password');
+            }
+        } catch (err) {
+            console.error('Login error:', err);
+            setError('Network error. Please check if the backend server is running.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -45,6 +77,12 @@ const Login = () => {
                     </h1>
                     <p className="text-gray-500 mt-2">Sign in to your account to book rooms</p>
                 </div>
+
+                {error && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-600 font-medium">{error}</p>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
@@ -85,9 +123,10 @@ const Login = () => {
 
                     <button
                         type="submit"
-                        className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors"
+                        disabled={loading}
+                        className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Sign In
+                        {loading ? 'Signing in...' : 'Sign In'}
                     </button>
                 </form>
 

@@ -9,17 +9,58 @@ const BookingModal = ({ isOpen, onClose, room, type }) => {
         endTime: '',
         duration: '',
     });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState(false);
 
     if (!isOpen || !room) return null;
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log(`${isReservation ? 'Reservation' : 'Booking'} submitted:`, {
-            roomName: room.name,
-            ...formData,
-        });
-        alert(`${isReservation ? 'Reservation' : 'Booking'} confirmed for ${room.name}!`);
-        onClose();
+        setLoading(true);
+        setError('');
+        setSuccess(false);
+
+        // Get current user from localStorage
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+            setError('Please login to book a room');
+            setLoading(false);
+            return;
+        }
+        const user = JSON.parse(userStr);
+
+        try {
+            const response = await fetch('http://localhost:3000/book', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: user.id,
+                    roomId: room.id,
+                    date: formData.date,
+                    startTime: formData.startTime.replace(' AM', ':00').replace(' PM', ':00'), // Simple conversion for backend
+                    endTime: formData.endTime.replace(' AM', ':00').replace(' PM', ':00'),
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setSuccess(true);
+                setTimeout(() => {
+                    onClose();
+                }, 2000);
+            } else {
+                setError(data.error || 'Booking failed');
+            }
+        } catch (err) {
+            console.error('Booking error:', err);
+            setError('Network error. Please check if the backend server is running.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const timeOptions = [
@@ -60,6 +101,16 @@ const BookingModal = ({ isOpen, onClose, room, type }) => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        {error && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 font-medium">
+                                {error}
+                            </div>
+                        )}
+                        {success && (
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600 font-medium">
+                                Booking confirmed! Check your email for details.
+                            </div>
+                        )}
                         {/* Date Picker */}
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-gray-700 flex items-center">
@@ -147,9 +198,10 @@ const BookingModal = ({ isOpen, onClose, room, type }) => {
                             </button>
                             <button
                                 type="submit"
-                                className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-black hover:bg-gray-900 transition-colors shadow-lg"
+                                disabled={loading || success}
+                                className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-black hover:bg-gray-900 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Confirm {isReservation ? 'Reservation' : 'Booking'}
+                                {loading ? 'Submitting...' : success ? 'Confirmed!' : `Confirm ${isReservation ? 'Reservation' : 'Booking'}`}
                             </button>
                         </div>
                     </form>

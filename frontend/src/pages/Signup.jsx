@@ -11,17 +11,63 @@ const Signup = () => {
         password: '',
         confirmPassword: '',
     });
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+        setError(''); // Clear error when user types
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Signup Data:', formData);
-        // Mock signup - navigate to login or dashboard
-        navigate('/login');
+        setError('');
+
+        // Validate passwords match
+        if (formData.password !== formData.confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
+        // Validate password length
+        if (formData.password.length < 6) {
+            setError('Password must be at least 6 characters');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const response = await fetch('http://localhost:3000/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: formData.email,
+                    password: formData.password,
+                    fullName: formData.fullName,
+                    department: formData.department,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Success - redirect to login
+                alert('Account created successfully! Please login.');
+                navigate('/login');
+            } else {
+                // Show error message from server
+                setError(data.error || 'Signup failed');
+            }
+        } catch (err) {
+            console.error('Signup error:', err);
+            setError('Network error. Please check if the backend server is running.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -36,6 +82,12 @@ const Signup = () => {
                     </h1>
                     <p className="text-gray-500 mt-2">Sign up to book rooms at Swahilipot</p>
                 </div>
+
+                {error && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-600">{error}</p>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1">
@@ -130,9 +182,10 @@ const Signup = () => {
 
                     <button
                         type="submit"
-                        className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors mt-6"
+                        disabled={loading}
+                        className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Sign Up
+                        {loading ? 'Creating Account...' : 'Sign Up'}
                     </button>
                 </form>
 
