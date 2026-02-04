@@ -8,19 +8,46 @@ const AdminLogin = () => {
         password: '',
     });
 
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+        setError('');
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Mock Admin Login
-        if (formData.email.trim() === 'admin@swahilipot.com' && formData.password.trim() === 'admin123') {
-            localStorage.setItem('isAdmin', 'true');
-            navigate('/admin/dashboard');
-        } else {
-            alert('Invalid Admin Credentials');
+        setLoading(true);
+        setError('');
+
+        try {
+            const response = await fetch('http://127.0.0.1:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                if (data.user.role === 'admin') {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem('isAdmin', 'true');
+                    navigate('/admin/dashboard');
+                } else {
+                    setError('Access denied. This portal is for administrators only.');
+                }
+            } else {
+                setError(data.error || 'Invalid Admin Credentials');
+            }
+        } catch (err) {
+            setError('Server connection failed. Please ensure the backend is running.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -36,6 +63,12 @@ const AdminLogin = () => {
                     </h1>
                     <p className="text-gray-500 mt-2">Sign in to manage rooms and users</p>
                 </div>
+
+                {error && (
+                    <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg text-center">
+                        {error}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
@@ -76,9 +109,11 @@ const AdminLogin = () => {
 
                     <button
                         type="submit"
-                        className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600 transition-colors"
+                        disabled={loading}
+                        className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white transition-colors ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+                            }`}
                     >
-                        Access Admin Dashboard
+                        {loading ? 'Authenticating...' : 'Access Admin Dashboard'}
                     </button>
                 </form>
 

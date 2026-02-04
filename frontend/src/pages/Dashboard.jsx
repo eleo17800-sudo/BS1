@@ -12,28 +12,33 @@ const Dashboard = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [currentView, setCurrentView] = useState('available');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+    const fetchRooms = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            // Include date in query if we're in the 'available' view
+            const queryParam = currentView === 'available' ? `?date=${selectedDate}` : '';
+            const response = await fetch(`http://localhost:3000/rooms${queryParam}`);
+
+            if (!response.ok) throw new Error('Failed to fetch rooms');
+
+            const data = await response.json();
+            setRooms(data);
+        } catch (err) {
+            console.error('Error fetching rooms:', err);
+            setError('Could not load rooms. Please check your connection.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const defaultRooms = [
-            { id: 1, name: 'Conference Room A', space: 'Floor 1', capacity: 10, amenities: ['Projector', 'Whiteboard', 'Video Conference'], status: 'Available' },
-            { id: 2, name: 'Meeting Room B', space: 'Floor 1', capacity: 6, amenities: ['Whiteboard', 'TV Display'], status: 'Available' },
-            { id: 3, name: 'Boardroom', space: 'Floor 2', capacity: 12, amenities: ['Projector', 'Video Conference', 'AC'], status: 'Available' },
-            { id: 4, name: 'Focus Room 1', space: 'Floor 2', capacity: 2, amenities: ['Whiteboard'], status: 'Available' },
-            { id: 5, name: 'Training Hall', space: 'Ground Floor', capacity: 50, amenities: ['Sound System', 'Projector'], status: 'Reserved' },
-            { id: 6, name: 'Podcast Studio', space: 'Floor 3', capacity: 4, amenities: ['Soundproofing', 'Mics'], status: 'Booked' }
-        ];
-
-        try {
-            const storedRooms = JSON.parse(localStorage.getItem('rooms')) || defaultRooms;
-            setRooms(storedRooms);
-            if (!localStorage.getItem('rooms')) {
-                localStorage.setItem('rooms', JSON.stringify(defaultRooms));
-            }
-        } catch (e) {
-            console.error('Error parsing rooms:', e);
-            setRooms(defaultRooms);
-        }
-    }, []);
+        fetchRooms();
+    }, [currentView, selectedDate]);
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,15 +64,18 @@ const Dashboard = () => {
         setIsModalOpen(true);
     };
 
-    // Filter rooms based on search term AND current view
+    // Filter rooms based on search term only (status filtering happens at API level for 'available' view)
     const filteredRooms = rooms.filter(room => {
         const matchesSearch = room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             room.amenities.some(amenity => amenity.toLowerCase().includes(searchTerm.toLowerCase()));
 
-        const matchesView = currentView === 'available' ? room.status === 'Available' :
-            currentView === 'reserved' ? room.status === 'Reserved' :
-                currentView === 'booked' ? room.status === 'Booked' :
-                    true;
+        // We still filter for 'Reserved' and 'Booked' locally for those specific UI views if needed,
+        // although in a full DB app these would likely be separate API queries too.
+        if (currentView === 'available') return matchesSearch;
+
+        const matchesView = currentView === 'reserved' ? room.status === 'Reserved' :
+            currentView === 'booked' ? room.status === 'Booked' :
+                true;
 
         return matchesSearch && matchesView;
     });
@@ -101,7 +109,20 @@ const Dashboard = () => {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-                    <h1 className="text-2xl font-bold text-gray-900">{getPageTitle()}</h1>
+                    <div className="flex flex-col gap-1">
+                        <h1 className="text-2xl font-bold text-gray-900">{getPageTitle()}</h1>
+                        {currentView === 'available' && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-500 font-medium">For Date:</span>
+                                <input
+                                    type="date"
+                                    value={selectedDate}
+                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                    className="text-sm border-none bg-transparent font-bold text-blue-600 focus:ring-0 cursor-pointer"
+                                />
+                            </div>
+                        )}
+                    </div>
 
                     <div className="relative w-full sm:w-96">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -117,7 +138,22 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {filteredRooms.length === 0 ? (
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                        <p className="text-gray-500">Checking availability...</p>
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-12 bg-red-50 rounded-xl border border-red-100">
+                        <p className="text-red-600 mb-4">{error}</p>
+                        <button
+                            onClick={fetchRooms}
+                            className="text-blue-600 font-bold hover:underline"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                ) : filteredRooms.length === 0 ? (
                     <div className="text-center py-12">
                         <p className="text-gray-500 text-lg">No rooms found in this category.</p>
                     </div>

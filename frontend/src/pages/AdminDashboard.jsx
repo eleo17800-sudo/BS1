@@ -7,42 +7,42 @@ import Footer from '../components/Footer';
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [rooms, setRooms] = useState([]);
+    const [bookings, setBookings] = useState([]);
     const [activeSessions, setActiveSessions] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('rooms'); // 'rooms' or 'users'
+    const [activeTab, setActiveTab] = useState('rooms'); // 'rooms', 'users', or 'bookings'
+    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        const isAdmin = localStorage.getItem('isAdmin');
-        if (!isAdmin) {
-            navigate('/admin/login');
-            return;
-        }
-
-        const defaultRooms = [
-            { id: 1, name: 'Conference Room A', space: 'Floor 1', capacity: 10, amenities: ['Projector', 'Whiteboard'], status: 'Available' },
-            { id: 2, name: 'Meeting Room B', space: 'Floor 1', capacity: 6, amenities: ['Whiteboard'], status: 'Available' },
-            { id: 3, name: 'Boardroom', space: 'Floor 2', capacity: 12, amenities: ['Projector', 'Video Conference'], status: 'Available' },
-            { id: 4, name: 'Focus Room 1', space: 'Floor 2', capacity: 2, amenities: ['Whiteboard'], status: 'Available' },
-        ];
-
+    const fetchData = async () => {
+        setLoading(true);
         try {
-            const storedRooms = JSON.parse(localStorage.getItem('rooms')) || defaultRooms;
-            setRooms(storedRooms);
-            if (!localStorage.getItem('rooms')) {
-                localStorage.setItem('rooms', JSON.stringify(defaultRooms));
-            }
-        } catch (e) {
-            console.error('Error parsing rooms:', e);
-            setRooms(defaultRooms);
-        }
+            // Fetch Rooms
+            const roomsRes = await fetch('http://localhost:3000/rooms');
+            const roomsData = await roomsRes.json();
+            setRooms(roomsData);
 
-        try {
+            // Fetch Admin Bookings
+            const bookingsRes = await fetch('http://localhost:3000/admin/bookings');
+            const bookingsData = await bookingsRes.json();
+            setBookings(bookingsData);
+
+            // Sessions still from local for now as per previous mock logic
             const storedSessions = JSON.parse(localStorage.getItem('activeSessions')) || [];
             setActiveSessions(storedSessions);
-        } catch (e) {
-            console.error('Error parsing sessions:', e);
-            setActiveSessions([]);
+        } catch (err) {
+            console.error('Error fetching admin data:', err);
+        } finally {
+            setLoading(false);
         }
+    };
+
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || user.role !== 'admin') {
+            navigate('/login');
+            return;
+        }
+        fetchData();
     }, [navigate]);
 
     const calculateDuration = (loginTime) => {
@@ -69,8 +69,8 @@ const AdminDashboard = () => {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('isAdmin');
-        navigate('/admin/login');
+        localStorage.removeItem('user');
+        navigate('/login');
     };
 
     const deleteRoom = (id) => {
@@ -121,6 +121,13 @@ const AdminDashboard = () => {
                         >
                             <LayoutGrid className="w-4 h-4 mr-2" />
                             Rooms
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('bookings')}
+                            className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'bookings' ? 'bg-red-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                        >
+                            <Clock className="w-4 h-4 mr-2" />
+                            Bookings
                         </button>
                         <button
                             onClick={() => setActiveTab('users')}
@@ -179,6 +186,61 @@ const AdminDashboard = () => {
                                         </td>
                                     </tr>
                                 ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : activeTab === 'bookings' ? (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User / Room</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {bookings.length > 0 ? bookings.map((booking) => (
+                                    <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-gray-900">{booking.user_name}</span>
+                                                <span className="text-xs text-gray-500">{booking.room_name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex flex-col text-sm text-gray-900">
+                                                <span>{new Date(booking.booking_date).toLocaleDateString()}</span>
+                                                <span className="text-xs text-gray-500">{booking.start_time} - {booking.end_time}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${booking.type === 'booking' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                                                {booking.type}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                                    booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                        'bg-red-100 text-red-800'
+                                                }`}>
+                                                {booking.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <button className="text-green-600 hover:text-green-900 mr-3 font-bold">Approve</button>
+                                            <button className="text-red-600 hover:text-red-900 font-bold">Reject</button>
+                                        </td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                                            No bookings or reservations found.
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>

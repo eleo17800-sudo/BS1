@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Diagnostic Tool</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 600px; margin: 40px auto; padding: 20px; background: #f4f7f6; }
+        .card { background: white; padding: 25px; border-radius: 12px; shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid #e1e4e8; }
+        h1 { color: #2c3e50; font-size: 24px; margin-top: 0; }
+        .status { font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 14px; }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.pending { background: #fff3cd; color: #856404; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; transition: background 0.2s; }
+        button:hover { background: #0056b3; }
+        #log { font-family: monospace; background: #2d3436; color: #dfe6e9; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 13px; max-height: 200px; }
+        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>🔍 Backend Diagnostics</h1>
+        <p>Step 1: Check if server is running and database is connected.</p>
+        <button onclick="checkHealth()">Check Server Health</button>
+        <div id="healthResult" style="margin-top: 15px;"></div>
+    </div>
+
+    <div class="card">
+        <h1>🔑 Login Test</h1>
+        <p>Step 2: Test if the Admin login works with the database.</p>
+        <input type="email" id="email" placeholder="admin@swahilipothub.co.ke" value="admin@swahilipothub.co.ke">
+        <input type="password" id="password" placeholder="admin123" value="admin123">
+        <button onclick="testLogin()">Test Authentication</button>
+        <div id="loginResult" style="margin-top: 15px;"></div>
+    </div>
+
+    <div class="card">
+        <h1>📜 Activity Log</h1>
+        <div id="log">Waiting for action...</div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://127.0.0.1:3000';
+
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            if (logEl.innerHTML === 'Waiting for action...') logEl.innerHTML = '';
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff7675' : (type === 'success' ? '#55efc4' : '#dfe6e9');
+            logEl.innerHTML = `<div class="log-entry"><span style="color: ${color}">[${timestamp}] ${message}</span></div>` + logEl.innerHTML;
+        }
+
+        async function checkHealth() {
+            const resultEl = document.getElementById('healthResult');
+            resultEl.innerHTML = '<span class="status pending">Checking...</span>';
+            log('Requesting GET /health...');
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/health`);
+                const data = await res.json();
+                
+                if (res.ok) {
+                    resultEl.innerHTML = '<span class="status success">✅ Backend & DB: ONLINE</span>';
+                    log(`Health Check Success: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    resultEl.innerHTML = '<span class="status error">❌ Backend Error</span>';
+                    log(`Health Check Failed: Server returned ${res.status}`, 'error');
+                }
+            } catch (err) {
+                resultEl.innerHTML = '<span class="status error">❌ Connection Failed</span>';
+                log(`Health Check Failed: ${err.message}. Is your backend running?`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            const resultEl = document.getElementById('loginResult');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            resultEl.innerHTML = '<span class="status pending">Authenticating...</span>';
+            log(`Requesting POST /login for ${email}...`);
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    resultEl.innerHTML = '<span class="status success">✅ Login Success (Role: ' + data.user.role + ')</span>';
+                    log(`Login Success! Welcome ${data.user.fullName}`, 'success');
+                } else {
+                    resultEl.innerHTML = `<span class="status error">❌ ${data.error || 'Login Failed'}</span>`;
+                    log(`Login Failed: ${data.error}`, 'error');
+                }
+            } catch (err) {
+                resultEl.innerHTML = '<span class="status error">❌ Connection Failed</span>';
+                log(`Login Failed: ${err.message}. Is your backend running?`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
