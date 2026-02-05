@@ -1,11 +1,31 @@
-import React from 'react';
-import { LogOut, Building2, Menu, Home } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { LogOut, Building2, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Navbar = ({ onMenuClick }) => {
     const navigate = useNavigate();
+    const [user] = useState(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            try {
+                return JSON.parse(storedUser);
+            } catch (err) {
+                console.error('Error parsing user data:', err);
+                localStorage.removeItem('user');
+            }
+        }
+        return { fullName: 'User', email: '' };
+    });
+
+    useEffect(() => {
+        if (!localStorage.getItem('user')) {
+            navigate('/login');
+        }
+    }, [navigate]);
 
     const handleLogout = () => {
+        localStorage.removeItem('user');
+        localStorage.removeItem('activeSessions');
         navigate('/login');
     };
 
@@ -33,8 +53,8 @@ const Navbar = ({ onMenuClick }) => {
                     </div>
                     <div className="flex items-center">
                         <div className="text-right mr-4 hidden sm:block">
-                            <p className="text-sm font-medium text-gray-900">Anthony Muhati</p>
-                            <p className="text-xs text-gray-500">anthonymuhati52@gmail.com</p>
+                            <p className="text-sm font-medium text-gray-900">{user.fullName}</p>
+                            <p className="text-xs text-gray-500">{user.email}</p>
                         </div>
                         <button
                             onClick={handleLogout}
