@@ -98,14 +98,14 @@ app.post('/signup', async (req, res) => {
         // Send welcome email (don't wait for it)
         sendMail(
             email,
-            'Welcome to SwahiliPot Hub!',
+            'Welcome to SwahiliPot Hub Booking System!',
             `Hello ${fullName},\n\nWelcome to SwahiliPot Hub Room Booking System! You can now book rooms for your meetings and events.\n\nBest regards,\nSwahiliPot Hub Team`,
             `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #0B4F6C;">Welcome to SwahiliPot Hub!</h2>
                 <p>Hello <strong>${fullName}</strong>,</p>
                 <p>Welcome to SwahiliPot Hub Room Booking System! You can now book rooms for your meetings and events.</p>
-                <p>Get started by logging in and exploring our available rooms.</p>
+                <p>Get started by logging in and exploring the available rooms.</p>
                 <br>
                 <p>Best regards,<br><strong>SwahiliPot Hub Team</strong></p>
             </div>
@@ -168,48 +168,91 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// GET ROOMS (with availability check)
+// GET ROOMS (with dynamic status for a specific date)
 app.get('/rooms', async (req, res) => {
-    const { date } = req.query;
+    // Default to today in local time if no date provided
+    const today = new Date().toLocaleDateString('en-CA');
+    const date = req.query.date || today;
 
     try {
-        let query = `
+        // Join with bookings to see if room is taken on this specific date
+        // We use a subquery to avoid multiple rows per room if there are multiple bookings
+        const query = `
             SELECT 
-                r.id,
-                r.name,
-                r.space,
-                r.capacity,
-                r.amenities,
-                r.status
+                r.*,
+                (SELECT b.type FROM bookings b 
+                 WHERE b.room_id = r.id 
+                 AND b.booking_date = ? 
+                 AND b.status IN ('pending', 'confirmed')
+                 LIMIT 1) as current_booking_type
             FROM rooms r
+            ORDER BY r.name
         `;
 
-        // If date is provided, filter out booked rooms for that date
-        if (date) {
-            query += `
-                WHERE r.id NOT IN (
-                    SELECT room_id 
-                    FROM bookings 
-                    WHERE booking_date = ? 
-                    AND status IN ('pending', 'confirmed')
-                )
-            `;
-        }
+        const [rooms] = await dbPromise.query(query, [date]);
 
-        query += ' ORDER BY r.name';
+        // Parse JSON amenities and determine status
+        const processedRooms = rooms.map(room => {
+            let status = 'Available';
+            if (room.current_booking_type) {
+                status = room.current_booking_type === 'reservation' ? 'Reserved' : 'Booked';
+            }
 
-        const [rooms] = await dbPromise.query(query, date ? [date] : []);
+            return {
+                ...room,
+                status: status,
+                amenities: JSON.parse(room.amenities || '[]')
+            };
+        });
 
-        // Parse JSON amenities
-        const parsedRooms = rooms.map(room => ({
-            ...room,
-            amenities: JSON.parse(room.amenities || '[]')
-        }));
-
-        res.json(parsedRooms);
+        res.json(processedRooms);
     } catch (error) {
         console.error('Get rooms error:', error);
         res.status(500).json({ error: 'Failed to fetch rooms' });
+    }
+});
+
+// ADD NEW ROOM (Admin only)
+app.post('/rooms', async (req, res) => {
+    const { name, space, capacity, amenities } = req.body;
+
+    try {
+        const [result] = await dbPromise.query(
+            'INSERT INTO rooms (name, space, capacity, amenities, status) VALUES (?, ?, ?, ?, ?)',
+            [name, space, capacity, JSON.stringify(amenities || []), 'Available']
+        );
+
+        res.status(201).json({
+            id: result.insertId,
+            name,
+            space,
+            capacity,
+            amenities,
+            status: 'Available'
+        });
+    } catch (error) {
+        console.error('Add room error:', error);
+        res.status(500).json({ error: 'Failed to add room' });
+    }
+});
+
+// DELETE ROOM (Admin only)
+app.delete('/rooms/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // First delete related bookings to maintain integrity
+        await dbPromise.query('DELETE FROM bookings WHERE room_id = ?', [id]);
+        const [result] = await dbPromise.query('DELETE FROM rooms WHERE id = ?', [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Room not found' });
+        }
+
+        res.json({ message: 'Room deleted successfully' });
+    } catch (error) {
+        console.error('Delete room error:', error);
+        res.status(500).json({ error: 'Failed to delete room' });
     }
 });
 

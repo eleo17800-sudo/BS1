@@ -4,7 +4,7 @@ import { X, Calendar as CalendarIcon, Clock, ChevronDown } from 'lucide-react';
 const BookingModal = ({ isOpen, onClose, room, type }) => {
     const isReservation = type === 'reservation';
     const [formData, setFormData] = useState({
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('en-CA'),
         startTime: '',
         endTime: '',
         duration: '',
